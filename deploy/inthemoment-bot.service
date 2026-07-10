@@ -1,0 +1,16 @@
+[Unit]
+Description=InTheMoment Telegram reminder bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/inthemoment
+EnvironmentFile=/opt/inthemoment/.env
+ExecStart=/opt/inthemoment/venv/bin/python -m bot.main
+Restart=on-failure
+RestartSec=5
+User=inthemoment
+
+[Install]
+WantedBy=multi-user.target
