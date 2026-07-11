@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة اقتباسات بوت اللحظة</title>
+<style>
+  :root {
+    --bg: #f5f4f1;
+    --panel: #ffffff;
+    --text: #24211c;
+    --muted: #756f64;
+    --border: #e2ddd3;
+    --accent: #7a5c3e;
+    --accent-strong: #5c4329;
+    --danger: #b3492f;
+    --danger-bg: #fbe9e5;
+    --success: #3f6b3f;
+    --success-bg: #e8f2e6;
+    --focus: #b99b6e;
+    --shadow: 0 1px 2px rgba(30, 25, 15, 0.06), 0 4px 14px rgba(30, 25, 15, 0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1917;
+      --panel: #252220;
+      --text: #ece7de;
+      --muted: #a89f8f;
+      --border: #3a352e;
+      --accent: #cbaa7c;
+      --accent-strong: #e3c396;
+      --danger: #e08469;
+      --danger-bg: #3a2622;
+      --success: #8fc48a;
+      --success-bg: #223324;
+      --focus: #cbaa7c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1917; --panel: #252220; --text: #ece7de; --muted: #a89f8f;
+    --border: #3a352e; --accent: #cbaa7c; --accent-strong: #e3c396;
+    --danger: #e08469; --danger-bg: #3a2622; --success: #8fc48a; --success-bg: #223324;
+    --focus: #cbaa7c; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f4f1; --panel: #ffffff; --text: #24211c; --muted: #756f64;
+    --border: #e2ddd3; --accent: #7a5c3e; --accent-strong: #5c4329;
+    --danger: #b3492f; --danger-bg: #fbe9e5; --success: #3f6b3f; --success-bg: #e8f2e6;
+    --focus: #b99b6e; --shadow: 0 1px 2px rgba(30,25,15,.06), 0 4px 14px rgba(30,25,15,.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+    line-height: 1.65;
+    padding: 24px 16px 80px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  header.page-header { margin-bottom: 20px; }
+  header.page-header h1 { font-size: 1.5rem; margin: 0 0 6px; }
+  header.page-header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  details.settings summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+  }
+  details.settings summary::-webkit-details-marker { display: none; }
+  details.settings summary::before {
+    content: "⚙ ";
+  }
+  details.settings[open] summary { margin-bottom: 12px; }
+
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+  .field .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .field .hint a { color: var(--accent-strong); }
+
+  input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary {
+    background: var(--accent-strong);
+    color: #1b1917;
+    border-color: var(--accent-strong);
+    font-weight: 600;
+  }
+  button.primary:hover { filter: brightness(1.05); }
+  button.danger-outline { color: var(--danger); border-color: var(--danger); background: transparent; }
+  button.danger-outline:hover { background: var(--danger-bg); }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .toolbar input[type="text"] { flex: 1 1 220px; min-width: 160px; }
+  .toolbar .spacer { flex: 1 1 auto; }
+  .count-badge {
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  #status {
+    font-size: 0.88rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  #status.show { display: block; }
+  #status.info { background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
+  #status.success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+  #status.error { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+  #status a { color: inherit; font-weight: 600; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card.new { border-color: var(--accent); }
+  .card .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .card .idx { font-size: 0.78rem; color: var(--muted); }
+  .card .card-actions { display: flex; gap: 6px; }
+  .card .source-field { margin-top: 8px; }
+  .card .char-count {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: left;
+    margin-top: 4px;
+  }
+  .card .char-count.over { color: var(--danger); font-weight: 600; }
+  mark { background: color-mix(in srgb, var(--focus) 55%, transparent); color: inherit; border-radius: 3px; }
+
+  #empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    display: none;
+  }
+
+  footer.page-footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 30px;
+  }
+
+  .overflow-x { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-header">
+    <h1>🌿 إدارة اقتباسات بوت اللحظة</h1>
+    <p>تصفّح، ابحث، عدّل، أضف، أو احذف اقتباسات البوت — والتعديلات تُرفع مباشرةً إلى GitHub من هذه الصفحة.</p>
+  </header>
+
+  <details class="settings panel" id="settings">
+    <summary>إعداد صلاحية الرفع (توكن GitHub)</summary>
+    <div class="field">
+      <label for="token-input">GitHub Personal Access Token</label>
+      <input type="password" id="token-input" placeholder="ghp_... أو github_pat_...">
+      <p class="hint">
+        بدون توكن يمكنك التصفح والبحث فقط. لرفع تعديلاتك تحتاج توكن بصلاحية كتابة على هذا المستودع تحديدًا:<br>
+        1) اذهب إلى <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">صفحة إنشاء Fine-grained token</a>.<br>
+        2) في "Repository access" اختر "Only select repositories" ثم اختر <code>InTheMoment</code>.<br>
+        3) في "Permissions → Repository permissions" اختر "Contents: Read and write".<br>
+        4) أنشئ التوكن وانسخه (يظهر مرة واحدة فقط) والصقه هنا.<br>
+        يُحفظ التوكن في متصفحك فقط (localStorage) ولا يُرسل إلا مباشرة إلى GitHub API — لا تُشارك هذا التوكن مع أي أحد أو أي موقع آخر.
+      </p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="primary" id="save-token-btn">حفظ التوكن</button>
+      <button class="danger-outline" id="clear-token-btn">حذف التوكن المحفوظ</button>
+    </div>
+  </details>
+
+  <div id="status"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search-input" placeholder="🔍 ابحث في نصوص الاقتباسات...">
+    <span class="count-badge" id="count-badge">—</span>
+    <span class="spacer"></span>
+    <button id="reload-btn">↻ إعادة التحميل من GitHub</button>
+    <button id="add-btn">+ إضافة اقتباس جديد</button>
+    <button class="primary" id="save-btn" disabled>⬆ رفع التعديلات إلى GitHub</button>
+  </div>
+
+  <div id="list"></div>
+  <div id="empty-state">لا توجد اقتباسات مطابقة لبحثك.</div>
+
+  <footer class="page-footer">
+    يُدير هذه الصفحة الملف <code>bot/quotes.txt</code> في مستودع newSaleh/InTheMoment مباشرة عبر GitHub API.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const CONFIG = {
+    owner: "newSaleh",
+    repo: "InTheMoment",
+    path: "bot/quotes.txt",
+    branch: "main",
+  };
+  const DELIM = "\n---\n";
+  const TELEGRAM_LIMIT = 4096;
+  const TOKEN_KEY = "inthemoment_gh_token";
+
+  /** @type {{sha: string|null, quotes: {text: string, source: string}[]}} */
+  const state = { sha: null, quotes: [] };
+
+  const el = (id) => document.getElementById(id);
+  const listEl = el("list");
+  const emptyStateEl = el("empty-state");
+  const statusEl = el("status");
+  const countBadge = el("count-badge");
+  const searchInput = el("search-input");
+  const saveBtn = el("save-btn");
+  const addBtn = el("add-btn");
+  const reloadBtn = el("reload-btn");
+  const tokenInput = el("token-input");
+  const saveTokenBtn = el("save-token-btn");
+  const clearTokenBtn = el("clear-token-btn");
+  const settingsDetails = el("settings");
+
+  // ---------- token handling ----------
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY) || "";
+  }
+  function setToken(t) {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+    refreshSaveButtonState();
+  }
+  function refreshSaveButtonState() {
+    saveBtn.disabled = !getToken();
+  }
+
+  const existingToken = getToken();
+  if (existingToken) {
+    tokenInput.value = existingToken;
+  } else {
+    settingsDetails.open = true;
+  }
+  refreshSaveButtonState();
+
+  saveTokenBtn.addEventListener("click", () => {
+    setToken(tokenInput.value.trim());
+    showStatus(getToken() ? "تم حفظ التوكن في هذا المتصفح." : "لم يتم إدخال أي توكن.", getToken() ? "success" : "info");
+  });
+  clearTokenBtn.addEventListener("click", () => {
+    tokenInput.value = "";
+    setToken("");
+    showStatus("تم حذف التوكن المحفوظ.", "info");
+  });
+
+  // ---------- status ----------
+
+  function showStatus(html, kind) {
+    statusEl.innerHTML = html;
+    statusEl.className = "show " + (kind || "info");
+  }
+  function clearStatus() {
+    statusEl.className = "";
+  }
+
+  // ---------- utf-8 safe base64 ----------
+
+  function b64ToUtf8(b64) {
+    const binary = atob(b64.replace(/\n/g, ""));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  function utf8ToB64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+
+  // ---------- parsing quotes.txt <-> {text, source} ----------
+
+  function parseBlock(block) {
+    const marker = "\n\n— ";
+    const idx = block.lastIndexOf(marker);
+    if (idx !== -1) {
+      return {
+        text: block.slice(0, idx).trim(),
+        source: block.slice(idx + marker.length).trim(),
+      };
+    }
+    return { text: block.trim(), source: "" };
+  }
+
+  function buildBlock(quote) {
+    const text = quote.text.trim();
+    const source = quote.source.trim();
+    return source ? `${text}\n\n— ${source}` : text;
+  }
+
+  function parseFile(raw) {
+    return raw
+      .split(DELIM)
+      .map((b) => b.trim())
+      .filter((b) => b.length > 0)
+      .map(parseBlock);
+  }
+
+  function buildFile(quotes) {
+    const blocks = quotes
+      .map(buildBlock)
+      .map((b) => b.trim())
+      .filter((b) => b.length > 0);
+    return blocks.join(DELIM) + "\n";
+  }
+
+  // ---------- GitHub API ----------
+
+  function apiHeaders() {
+    const headers = { Accept: "application/vnd.github+json" };
+    const token = getToken();
+    if (token) headers.Authorization = "Bearer " + token;
+    return headers;
+  }
+
+  async function fetchQuotes() {
+    showStatus("جارٍ تحميل الاقتباسات من GitHub...", "info");
+    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.path}?ref=${CONFIG.branch}`;
+    const res = await fetch(url, { headers: apiHeaders() });
+    if (!res.ok) {
+      throw new Error(`تعذّر تحميل الملف من GitHub (HTTP ${res.status}). ${await safeErrText(res)}`);
+    }
+    const data = await res.json();
+    state.sha = data.sha;
+    const raw = b64ToUtf8(data.content);
+    state.quotes = parseFile(raw);
+    clearStatus();
+    render();
+  }
+
+  async function safeErrText(res) {
+    try {
+      const j = await res.json();
+      return j.message || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  async function saveQuotes() {
+    const token = getToken();
+    if (!token) {
+      showStatus("أضف توكن GitHub أولًا (⚙ إعداد صلاحية الرفع) قبل الرفع.", "error");
+      return;
+    }
+    const nonEmpty = state.quotes.filter((q) => q.text.trim().length > 0);
+    if (nonEmpty.length === 0) {
+      showStatus("لا يمكن رفع قائمة اقتباسات فارغة.", "error");
+      return;
+    }
+    const overLimit = nonEmpty.filter((q) => buildBlock(q).length > TELEGRAM_LIMIT);
+    if (overLimit.length > 0) {
+      showStatus(
+        `يوجد ${overLimit.length} اقتباس(ات) تتجاوز حد تيليقرام (4096 حرفًا) وسيفشل إرسالها. اختصرها قبل الرفع.`,
+        "error"
+      );
+      return;
+    }
+
+    saveBtn.disabled = true;
+    showStatus("جارٍ رفع التعديلات إلى GitHub...", "info");
+
+    const content = buildFile(nonEmpty);
+    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.path}`;
+    const body = {
+      message: "تحديث اقتباسات البوت عبر صفحة الإدارة",
+      content: utf8ToB64(content),
+      sha: state.sha,
+      branch: CONFIG.branch,
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { ...apiHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        if (res.status === 409) {
+          showStatus(
+            "تعارض: تم تعديل الملف على GitHub منذ آخر تحميل. اضغط «إعادة التحميل» ثم أعد تطبيق تعديلاتك.",
+            "error"
+          );
+        } else {
+          const errText = await safeErrText(res);
+          showStatus(`فشل الرفع (HTTP ${res.status}). ${errText}`, "error");
+        }
+        return;
+      }
+      const data = await res.json();
+      state.sha = data.content.sha;
+      state.quotes = nonEmpty;
+      render();
+      const commitUrl = data.commit && data.commit.html_url;
+      showStatus(
+        `تم الرفع بنجاح ✅${commitUrl ? ` — <a href="${commitUrl}" target="_blank" rel="noopener">عرض الالتزام (commit) على GitHub</a>` : ""}`,
+        "success"
+      );
+    } catch (e) {
+      showStatus("تعذّر الاتصال بـ GitHub: " + e.message, "error");
+    } finally {
+      refreshSaveButtonState();
+    }
+  }
+
+  // ---------- rendering ----------
+
+  function highlight(text, term) {
+    if (!term) return escapeHtml(text);
+    const escaped = escapeHtml(text);
+    const escTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return escaped.replace(new RegExp(escTerm, "gi"), (m) => `<mark>${m}</mark>`);
+  }
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function render() {
+    const term = searchInput.value.trim();
+    listEl.innerHTML = "";
+    let shown = 0;
+
+    state.quotes.forEach((quote, index) => {
+      const haystack = quote.text + " " + quote.source;
+      if (term && !haystack.toLowerCase().includes(term.toLowerCase())) return;
+      shown++;
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const top = document.createElement("div");
+      top.className = "card-top";
+      const idxSpan = document.createElement("span");
+      idxSpan.className = "idx";
+      idxSpan.textContent = `#${index + 1}`;
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+      const delBtn = document.createElement("button");
+      delBtn.className = "danger-outline";
+      delBtn.textContent = "حذف 🗑";
+      delBtn.addEventListener("click", () => {
+        if (confirm("هل تريد حذف هذا الاقتباس نهائيًا من القائمة؟")) {
+          state.quotes.splice(index, 1);
+          render();
+        }
+      });
+      actions.appendChild(delBtn);
+      top.appendChild(idxSpan);
+      top.appendChild(actions);
+
+      const textArea = document.createElement("textarea");
+      textArea.value = quote.text;
+      textArea.rows = Math.min(14, Math.max(3, Math.ceil(quote.text.length / 60)));
+      textArea.addEventListener("input", () => {
+        quote.text = textArea.value;
+        updateCharCount();
+      });
+
+      const sourceWrap = document.createElement("div");
+      sourceWrap.className = "field source-field";
+      const sourceLabel = document.createElement("label");
+      sourceLabel.textContent = "المصدر (اختياري، مثال: التأملات، ماركوس أوريليوس)";
+      const sourceInput = document.createElement("input");
+      sourceInput.type = "text";
+      sourceInput.value = quote.source;
+      sourceInput.addEventListener("input", () => {
+        quote.source = sourceInput.value;
+        updateCharCount();
+      });
+      sourceWrap.appendChild(sourceLabel);
+      sourceWrap.appendChild(sourceInput);
+
+      const charCount = document.createElement("div");
+      charCount.className = "char-count";
+      function updateCharCount() {
+        const len = buildBlock(quote).length;
+        charCount.textContent = `${len} / ${TELEGRAM_LIMIT} حرفًا`;
+        charCount.classList.toggle("over", len > TELEGRAM_LIMIT);
+      }
+      updateCharCount();
+
+      card.appendChild(top);
+      card.appendChild(textArea);
+      card.appendChild(sourceWrap);
+      card.appendChild(charCount);
+      listEl.appendChild(card);
+    });
+
+    emptyStateEl.style.display = shown === 0 ? "block" : "none";
+    countBadge.textContent = term
+      ? `${shown} من ${state.quotes.length} اقتباسًا مطابقة`
+      : `${state.quotes.length} اقتباسًا إجمالًا`;
+  }
+
+  addBtn.addEventListener("click", () => {
+    state.quotes.unshift({ text: "", source: "" });
+    searchInput.value = "";
+    render();
+    const firstTextarea = listEl.querySelector("textarea");
+    if (firstTextarea) firstTextarea.focus();
+  });
+
+  searchInput.addEventListener("input", render);
+  reloadBtn.addEventListener("click", () => {
+    fetchQuotes().catch((e) => showStatus(e.message, "error"));
+  });
+  saveBtn.addEventListener("click", () => {
+    saveQuotes().catch((e) => showStatus(e.message, "error"));
+  });
+
+  fetchQuotes().catch((e) => showStatus(e.message, "error"));
+})();
+</script>
+</body>
+</html>
