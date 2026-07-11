@@ -31,7 +31,7 @@ jobs:
           MIN_DAILY_REMINDERS: ${{ vars.MIN_DAILY_REMINDERS }}
           MAX_DAILY_REMINDERS: ${{ vars.MAX_DAILY_REMINDERS }}
           MIN_GAP_MINUTES: ${{ vars.MIN_GAP_MINUTES }}
-        run: python bot/serverless.py
+        run: python -m bot.serverless
 
       - name: Commit updated state if it changed
         run: |
